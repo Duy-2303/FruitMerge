@@ -1,33 +1,31 @@
-using UnityEngine;
-using System.Collections;
+﻿using UnityEngine;
 using System.Collections.Generic;
+using DuyDZ.MergeFood.Test;
+
 namespace DuyDZ.MergeFood
 {
     public class ObjectPooler : MonoBehaviour
     {
-
         public static ObjectPooler current;
 
         [System.Serializable]
         public class Pool
         {
-            public string key;
+            public string key;          // "Cherry", "Apple", ...
             public GameObject prefab;
-            public int amount;
+            public int amount = 10;
         }
 
         public List<Pool> pools;
 
         private Dictionary<string, List<GameObject>> poolDict;
+        private Dictionary<string, GameObject> prefabDict;
 
         private void Awake()
         {
             current = this;
-        }
-
-        void Start()
-        {
             poolDict = new Dictionary<string, List<GameObject>>();
+            prefabDict = new Dictionary<string, GameObject>();
 
             foreach (var pool in pools)
             {
@@ -41,12 +39,33 @@ namespace DuyDZ.MergeFood
                 }
 
                 poolDict.Add(pool.key, list);
+                prefabDict.Add(pool.key, pool.prefab);
             }
         }
 
-        public GameObject GetPoolObject(string key, Vector3 pos)
+       
+
+        // =========================
+        // SPAWN (4 PARAM)
+        // =========================
+        public GameObject Spawn(string key, Vector3 pos, FruitType type, int level)
         {
-            if (!poolDict.ContainsKey(key)) return null;
+            Debug.Log("Spawn key: " + key);
+
+            if (poolDict == null)
+            {
+                Debug.LogError("poolDict NULL");
+            }
+
+            if (!poolDict.ContainsKey(key))
+            {
+                Debug.LogError("Key KHÔNG tồn tại: " + key);
+            }
+            if (!poolDict.ContainsKey(key))
+            {
+                Debug.LogError("Pool key not found: " + key);
+                return null;
+            }
 
             var list = poolDict[key];
 
@@ -54,38 +73,38 @@ namespace DuyDZ.MergeFood
             {
                 if (!list[i].activeInHierarchy)
                 {
-                    SetupObject(list[i], pos);
-                    return list[i];
+                    return Setup(list[i], pos, type, level);
                 }
             }
 
-            // grow
-            GameObject obj = Instantiate(list[0]);
+            // grow đúng prefab
+            GameObject obj = Instantiate(prefabDict[key]);
             list.Add(obj);
 
-            SetupObject(obj, pos);
+            return Setup(obj, pos, type, level);
+        }
+
+        GameObject Setup(GameObject obj, Vector3 pos, FruitType type, int level)
+        {
+            obj.transform.position = pos;
+            obj.transform.rotation = Quaternion.identity;
+            obj.transform.localScale = Vector3.one;
+
+            Fruit fruit = obj.GetComponent<Fruit>();
+            fruit.OnSpawn(type, level, pos);
+
             return obj;
         }
 
-        void SetupObject(GameObject obj, Vector3 pos)
+        // =========================
+        // DESPAWN
+        // =========================
+        public void Despawn(GameObject obj)
         {
-            obj.SetActive(true);
-            obj.transform.position = pos;
-            obj.transform.rotation = Quaternion.identity;
-
-            // reset physics
-            if (obj.TryGetComponent<Rigidbody2D>(out var rb))
-            {
-                rb.velocity = Vector2.zero;
-                rb.angularVelocity = 0;
-            }
-        }
-
-        public void ReturnToPool(GameObject obj)
-        {
-            obj.SetActive(false);
+            if (obj.TryGetComponent(out Fruit fruit))
+                fruit.OnDespawn();
+            else
+                obj.SetActive(false);
         }
     }
-
-
 }
