@@ -27,8 +27,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 0.7, y: 0.7, z: 0.7}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 3120463594533209203}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -215,9 +215,9 @@ CircleCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0, y: -0.009298027}
   serializedVersion: 2
-  m_Radius: 0.26
+  m_Radius: 0.2878942
 --- !u!50 &2787389126429564846
 Rigidbody2D:
   serializedVersion: 4
@@ -230,10 +230,10 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 0.5
+  m_Mass: 0.2
   m_LinearDrag: 0.8
-  m_AngularDrag: 1
-  m_GravityScale: 1
+  m_AngularDrag: 2
+  m_GravityScale: 2
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2

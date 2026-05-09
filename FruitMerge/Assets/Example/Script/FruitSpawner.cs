@@ -1,49 +1,97 @@
-using Link;
-using Sirenix.OdinInspector;
-using System;
-using System.Collections;
+﻿using Link;
 using UnityEngine;
+
 namespace DuyDZ.MergeFood.Test
 {
     public class FruitSpawner : MonoBehaviour
     {
         public Transform spawnPoint;
-        GameObject currentFruit;
-        private void Start()
-        {
-            SpawnNew();
-        }
+
+        private GameObject currentFruit;
+
+        private bool isDragging;
+
+        private bool canSpawn = true;
+
         private void Update()
         {
-            if(currentFruit == null) return;
-            Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            pos.y =spawnPoint.position.y;
-            pos.z = 0;
-            currentFruit.transform.position = pos;
-            if(Input.GetMouseButtonDown(0))
+            // CLICK -> SPAWN
+            if (Input.GetMouseButtonDown(0) && canSpawn)
             {
+                SpawnNew();
+
+                isDragging = true;
+            }
+
+            // DRAG
+            if (Input.GetMouseButton(0)
+                && isDragging
+                && currentFruit != null)
+            {
+                Vector3 pos =
+                    Camera.main.ScreenToWorldPoint(Input.mousePosition);
+
+                pos.y = spawnPoint.position.y;
+                pos.z = 0;
+
+                currentFruit.transform.position = pos;
+            }
+
+            // DROP
+            if (Input.GetMouseButtonUp(0)
+                && isDragging
+                && currentFruit != null)
+            {
+                isDragging = false;
+
                 Drop();
             }
         }
 
         private void Drop()
         {
+            Rigidbody2D rb =
+                currentFruit.GetComponent<Rigidbody2D>();
+
+            rb.bodyType = RigidbodyType2D.Dynamic;
+
             currentFruit = null;
-            Invoke(nameof(SpawnNew), .5f);
+
+            canSpawn = false;
+
+            Invoke(nameof(ResetSpawn), 0.5f);
         }
-        void SpawnNew()
+
+        private void ResetSpawn()
         {
-            FruitType type = GetRamdomType();
+            canSpawn = true;
+        }
+
+        private void SpawnNew()
+        {
+            FruitType type = GetRandomType();
+
             string key = type.ToString();
 
-            Vector3 pos = spawnPoint.position;
-            int level = (int)type;
+            currentFruit =
+                ObjectPooler.current.Spawn(
+                    key,
+                    spawnPoint.position,
+                    type,
+                    (int)type);
 
-            currentFruit = ObjectPooler.current.Spawn(key, pos, type, level);
+            Rigidbody2D rb =
+                currentFruit.GetComponent<Rigidbody2D>();
+
+            rb.velocity = Vector2.zero;
+            rb.angularVelocity = 0;
+
+            rb.bodyType = RigidbodyType2D.Kinematic;
         }
-        FruitType GetRamdomType()
+
+        private FruitType GetRandomType()
         {
-            return (FruitType)UnityEngine.Random.Range(0, 3);
+            return (FruitType)Random.Range(0, 3);
         }
     }
 }
