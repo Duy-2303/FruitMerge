@@ -48,7 +48,7 @@ namespace DuyDZ.MergeFood
         // =========================
         // SPAWN (4 PARAM)
         // =========================
-        public GameObject Spawn(string key, Vector3 pos, FruitType type, int level)
+        public GameObject Spawn(string key, Vector3 pos, FruitType type, int level, bool playMergeScale = false, bool enableCollisionDelay = true)
         {
             Debug.Log("Spawn key: " + key);
 
@@ -73,7 +73,7 @@ namespace DuyDZ.MergeFood
             {
                 if (!list[i].activeInHierarchy)
                 {
-                    return Setup(list[i], pos, type, level);
+                    return Setup(list[i], pos, type, level, playMergeScale, enableCollisionDelay);
                 }
             }
 
@@ -81,17 +81,27 @@ namespace DuyDZ.MergeFood
             GameObject obj = Instantiate(prefabDict[key]);
             list.Add(obj);
 
-            return Setup(obj, pos, type, level);
+            return Setup(obj, pos, type, level, playMergeScale, enableCollisionDelay);
         }
 
-        GameObject Setup(GameObject obj, Vector3 pos, FruitType type, int level)
+        public Sprite GetSprite(FruitType type)
+        {
+            string key = type.ToString();
+            if (prefabDict == null || !prefabDict.TryGetValue(key, out GameObject prefab) || prefab == null)
+                return null;
+
+            SpriteRenderer spriteRenderer = prefab.GetComponentInChildren<SpriteRenderer>();
+            return spriteRenderer != null ? spriteRenderer.sprite : null;
+        }
+
+        GameObject Setup(GameObject obj, Vector3 pos, FruitType type, int level, bool playMergeScale, bool enableCollisionDelay)
         {
             obj.transform.position = pos;
             obj.transform.rotation = Quaternion.identity;
-            obj.transform.localScale = Vector3.one;
+            obj.transform.localScale = playMergeScale ? Vector3.zero : Vector3.one;
 
             Fruit fruit = obj.GetComponent<Fruit>();
-            fruit.OnSpawn(type, level, pos);
+            fruit.OnSpawn(type, level, pos, playMergeScale, enableCollisionDelay);
 
             return obj;
         }

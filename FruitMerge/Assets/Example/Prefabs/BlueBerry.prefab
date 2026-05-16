@@ -27,7 +27,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.7, y: 0.7, z: 0.7}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 3120463594533209203}
@@ -110,7 +110,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.788177, y: 0.788177, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8057857545864249451}
@@ -168,6 +168,12 @@ MonoBehaviour:
   level: 1
   rb2D: {fileID: 2787389126429564846}
   col2D: {fileID: 1608368576954297546}
+  scalePopSize: 1.12
+  scalePopDuration: 0.14
+  mergeScaleStart: 0.2
+  mergeScaleDuration: 0.2
+  fallGravityScale: 2.6
+  mergeVfxPrefab: {fileID: 2608218198607328688, guid: eaa4f27c0c0e7be418c599d03476f6b8, type: 3}
 --- !u!111 &8550712995390745890
 Animation:
   m_ObjectHideFlags: 0
@@ -192,7 +198,7 @@ CircleCollider2D:
   m_GameObject: {fileID: 8792775920209262571}
   m_Enabled: 1
   m_Density: 1
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 6200000, guid: 9a946a20361a4cf4b8f5721eb25bd9d6, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -215,9 +221,9 @@ CircleCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: -0.009298027}
+  m_Offset: {x: 0, y: -0.00732849}
   serializedVersion: 2
-  m_Radius: 0.2878942
+  m_Radius: 0.39408867
 --- !u!50 &2787389126429564846
 Rigidbody2D:
   serializedVersion: 4
@@ -233,8 +239,8 @@ Rigidbody2D:
   m_Mass: 0.2
   m_LinearDrag: 0.8
   m_AngularDrag: 2
-  m_GravityScale: 2
-  m_Material: {fileID: 0}
+  m_GravityScale: 2.6
+  m_Material: {fileID: 6200000, guid: 9a946a20361a4cf4b8f5721eb25bd9d6, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
