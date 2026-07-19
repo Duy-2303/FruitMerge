@@ -107,7 +107,7 @@ namespace DuyDZ.MergeFood.Test
 
             Rigidbody2D rb = currentFruit.GetComponent<Rigidbody2D>();
 
-            rb.velocity = Vector2.zero;
+            rb.linearVelocity = Vector2.zero;
             rb.angularVelocity = 0;
             rb.bodyType = RigidbodyType2D.Kinematic;
         }

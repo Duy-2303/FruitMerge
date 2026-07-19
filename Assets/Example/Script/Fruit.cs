@@ -48,7 +48,7 @@ namespace DuyDZ.MergeFood.Test
             isMerging = false;
 
             // reset physics
-            rb2D.velocity = Vector2.zero;
+            rb2D.linearVelocity = Vector2.zero;
             rb2D.angularVelocity = 0;
             rb2D.bodyType = RigidbodyType2D.Dynamic;
 
