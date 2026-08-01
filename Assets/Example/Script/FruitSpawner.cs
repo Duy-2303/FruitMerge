@@ -1,12 +1,20 @@
 using Link;
 using System;
+using System.Collections.Generic;
+using DuyDZ.MergeFood;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace DuyDZ.MergeFood.Test
 {
     public class FruitSpawner : MonoBehaviour
     {
         public Transform spawnPoint;
+        [SerializeField] private GameObject settingsPanel;
+        [Header("Game Over")]
+        [SerializeField] private float gameOverContactDuration = 1f;
+        [SerializeField] private float gameOverPopupDelay = 2f;
+        [SerializeField] private EndGamePopUpUi gameOverPopup;
         [SerializeField] private float validClickBelowSpawnOffset = 0.05f;
         [Header("Screen Bounds")]
         [SerializeField] private bool clampFruitToScreen = true;
@@ -20,10 +28,14 @@ namespace DuyDZ.MergeFood.Test
         private FruitType nextFruitType;
         private bool hasNextFruit;
         private Vector3 lastSpawnPosition;
+        public bool IsInputLocked { get; set; }
+        public bool IsGameOver { get; private set; }
 
         private void Awake()
         {
+            Time.timeScale = 1f;
             lastSpawnPosition = spawnPoint != null ? spawnPoint.position : Vector3.zero;
+            SetupSpawnLineGameOverDetector();
             PrepareNextFruit();
         }
 
@@ -34,6 +46,15 @@ namespace DuyDZ.MergeFood.Test
 
         private void Update()
         {
+            if (IsGameOver ||
+                IsInputLocked ||
+                (settingsPanel != null && settingsPanel.activeInHierarchy) ||
+                IsPointerOverUI())
+            {
+                isDragging = false;
+                return;
+            }
+
             if (Input.GetMouseButtonDown(0) && canSpawn && IsPointerBelowSpawnBar())
             {
                 if (currentFruit == null)
@@ -60,6 +81,59 @@ namespace DuyDZ.MergeFood.Test
             }
         }
 
+        private void SetupSpawnLineGameOverDetector()
+        {
+            if (spawnPoint == null)
+                return;
+
+            SpawnLineGameOver detector = spawnPoint.GetComponent<SpawnLineGameOver>();
+            if (detector == null)
+                detector = spawnPoint.gameObject.AddComponent<SpawnLineGameOver>();
+
+            detector.Initialize(this, gameOverContactDuration);
+        }
+
+        public void TriggerGameOver()
+        {
+            if (IsGameOver)
+                return;
+
+            IsGameOver = true;
+            IsInputLocked = true;
+            isDragging = false;
+            canSpawn = false;
+            CancelInvoke(nameof(ResetSpawn));
+
+            Debug.Log("Game Over: Fruit touched the spawn line.");
+
+            if (gameOverPopupDelay <= 0f)
+                ShowGameOverPopup();
+            else
+                Invoke(nameof(ShowGameOverPopup), gameOverPopupDelay);
+        }
+
+        public void ShowGameOverPopup()
+        {
+            if (gameOverPopup != null)
+            {
+                gameOverPopup.Show();
+                return;
+            }
+
+            Debug.LogWarning("PopUpEnd has not been assigned to FruitSpawner.", this);
+        }
+
+        private static bool IsPointerOverUI()
+        {
+            if (EventSystem.current == null)
+                return false;
+
+            if (Input.touchCount > 0)
+                return EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId);
+
+            return EventSystem.current.IsPointerOverGameObject();
+        }
+
         private void Drop()
         {
             Rigidbody2D rb = currentFruit.GetComponent<Rigidbody2D>();
@@ -81,6 +155,9 @@ namespace DuyDZ.MergeFood.Test
 
         private void ResetSpawn()
         {
+            if (IsGameOver)
+                return;
+
             canSpawn = true;
 
             if (currentFruit == null)
@@ -89,6 +166,9 @@ namespace DuyDZ.MergeFood.Test
 
         private void SpawnNew()
         {
+            if (IsGameOver)
+                return;
+
             if (!hasNextFruit)
                 PrepareNextFruit();
 
@@ -175,5 +255,78 @@ namespace DuyDZ.MergeFood.Test
 
             return collider2D.bounds.extents;
         }
+    }
+
+    public class SpawnLineGameOver : MonoBehaviour
+    {
+        private readonly Dictionary<Fruit, float> fruitContactStartTimes =
+            new Dictionary<Fruit, float>();
+
+        private FruitSpawner fruitSpawner;
+        private float requiredContactDuration;
+
+        public void Initialize(FruitSpawner owner, float contactDuration)
+        {
+            fruitSpawner = owner;
+            requiredContactDuration = Mathf.Max(0f, contactDuration);
+
+            BoxCollider2D trigger = GetComponent<BoxCollider2D>();
+            if (trigger == null)
+                trigger = gameObject.AddComponent<BoxCollider2D>();
+
+            trigger.isTrigger = true;
+
+            SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+            if (spriteRenderer != null && spriteRenderer.sprite != null)
+            {
+                Bounds spriteBounds = spriteRenderer.sprite.bounds;
+                trigger.size = spriteBounds.size;
+                trigger.offset = spriteBounds.center;
+            }
+        }
+
+        private void OnTriggerEnter2D(Collider2D other)
+        {
+            if (other.TryGetComponent(out Fruit fruit))
+                fruitContactStartTimes[fruit] = Time.time;
+        }
+
+        private void OnTriggerStay2D(Collider2D other)
+        {
+            if (fruitSpawner == null || fruitSpawner.IsGameOver)
+                return;
+
+            if (!other.TryGetComponent(out Fruit fruit) ||
+                fruit.IsMerging ||
+                !fruit.gameObject.activeInHierarchy)
+            {
+                return;
+            }
+
+            Rigidbody2D rigidbody2D = fruit.GetComponent<Rigidbody2D>();
+            if (rigidbody2D == null || rigidbody2D.bodyType != RigidbodyType2D.Dynamic)
+                return;
+
+            if (!fruitContactStartTimes.TryGetValue(fruit, out float contactStartTime))
+            {
+                fruitContactStartTimes[fruit] = Time.time;
+                return;
+            }
+
+            if (Time.time - contactStartTime >= requiredContactDuration)
+                fruitSpawner.TriggerGameOver();
+        }
+
+        private void OnTriggerExit2D(Collider2D other)
+        {
+            if (other.TryGetComponent(out Fruit fruit))
+                fruitContactStartTimes.Remove(fruit);
+        }
+
+        private void OnDisable()
+        {
+            fruitContactStartTimes.Clear();
+        }
+       
     }
 }

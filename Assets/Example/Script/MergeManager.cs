@@ -22,6 +22,9 @@ namespace DuyDZ.MergeFood.Test
         {
             Ins = this;
             ScoreManager.GetOrCreate();
+
+            if (GetComponent<FruitBoosterManager>() == null)
+                gameObject.AddComponent<FruitBoosterManager>();
         }
 
         public void RequestMerge(Fruit a, Fruit b)
@@ -53,7 +56,7 @@ namespace DuyDZ.MergeFood.Test
 
             ObjectPooler.current.Spawn(key, pos, (FruitType)nextLevel, nextLevel, true);
             PlayMergeParticle(pos, fruitMergeVfxPrefab);
-
+            PlayMergeHaptic();
             ScoreManager.GetOrCreate().AddScore(nextLevel * 10);
         }
 
@@ -106,6 +109,14 @@ namespace DuyDZ.MergeFood.Test
 
             particleSystem.Play();
             Destroy(particleObject, mergeParticleLifeTime + 0.4f);
+        }
+        static void PlayMergeHaptic()
+        {
+            bool hapticEnabled = PlayerPrefs.GetInt("HapticEnabled", 1) == 1;
+            if(hapticEnabled)
+            {
+                Handheld.Vibrate();
+            }
         }
     }
 }

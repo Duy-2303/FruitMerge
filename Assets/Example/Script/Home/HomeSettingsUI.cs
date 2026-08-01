@@ -186,7 +186,8 @@ namespace DuyDZ.MergeFood
         }
         private static void RestartGame()
         {
-            SceneManager.LoadScene(GameplaySceneName);
+            Scene currentScene = SceneManager.GetActiveScene();
+            SceneManager.LoadScene(currentScene.buildIndex);
         }
 
         private void GoHome()
