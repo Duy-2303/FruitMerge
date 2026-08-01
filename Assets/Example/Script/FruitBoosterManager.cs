@@ -1,11 +1,30 @@
+using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-
+ 
 namespace DuyDZ.MergeFood.Test
 {
     public class FruitBoosterManager : MonoBehaviour
     {
+        public enum BoosterType
+        {
+            RemoveFruits,
+            BoomFruit,
+            LevelUpFruit
+        }
+
+        private sealed class BoosterState
+        {
+            public Button Button;
+            public GameObject CountIcon;
+            public GameObject AdsIcon;
+            public TMP_Text CountText;
+            public string PlayerPrefsKey;
+            public int RemainingUses;
+        }
+
         private enum SelectionMode
         {
             None,
@@ -16,12 +35,16 @@ namespace DuyDZ.MergeFood.Test
         private const string RemoveFruitsButtonName = "Button_RemoveFruits";
         private const string BoomFruitButtonName = "Button_BoomAFruit";
         private const string LevelUpFruitButtonName = "Button_LevelUpAFruit";
+        private const int InitialBoosterUses = 3;
 
         private Button removeFruitsButton;
         private Button boomFruitButton;
         private Button levelUpFruitButton;
         private FruitSpawner fruitSpawner;
         private SelectionMode selectionMode;
+        private BoosterState removeFruitsBooster;
+        private BoosterState boomFruitBooster;
+        private BoosterState levelUpFruitBooster;
 
         private void Start()
         {
@@ -30,16 +53,20 @@ namespace DuyDZ.MergeFood.Test
             levelUpFruitButton = FindButton(LevelUpFruitButtonName);
             fruitSpawner = FindFirstObjectByType<FruitSpawner>();
 
-            Bind(removeFruitsButton, RemoveTwoSmallestFruitTypes);
-            Bind(boomFruitButton, ToggleBoomSelection);
-            Bind(levelUpFruitButton, ToggleLevelUpSelection);
+            removeFruitsBooster = CreateBoosterState(removeFruitsButton, BoosterType.RemoveFruits);
+            boomFruitBooster = CreateBoosterState(boomFruitButton, BoosterType.BoomFruit);
+            levelUpFruitBooster = CreateBoosterState(levelUpFruitButton, BoosterType.LevelUpFruit);
+
+            Bind(removeFruitsButton, OnRemoveFruitsPressed);
+            Bind(boomFruitButton, OnBoomFruitPressed);
+            Bind(levelUpFruitButton, OnLevelUpFruitPressed);
         }
 
         private void OnDestroy()
         {
-            Unbind(removeFruitsButton, RemoveTwoSmallestFruitTypes);
-            Unbind(boomFruitButton, ToggleBoomSelection);
-            Unbind(levelUpFruitButton, ToggleLevelUpSelection);
+            Unbind(removeFruitsButton, OnRemoveFruitsPressed);
+            Unbind(boomFruitButton, OnBoomFruitPressed);
+            Unbind(levelUpFruitButton, OnLevelUpFruitPressed);
             SetSelectionMode(SelectionMode.None);
         }
 
@@ -71,7 +98,28 @@ namespace DuyDZ.MergeFood.Test
                 LevelUpFruit(fruit);
         }
 
-        private void RemoveTwoSmallestFruitTypes()
+        private void OnRemoveFruitsPressed()
+        {
+            if (!TryStartBooster(BoosterType.RemoveFruits, removeFruitsBooster))
+                return;
+
+            if (RemoveTwoSmallestFruitTypes())
+                ConsumeUse(removeFruitsBooster);
+        }
+
+        private void OnBoomFruitPressed()
+        {
+            if (TryStartBooster(BoosterType.BoomFruit, boomFruitBooster))
+                ToggleBoomSelection();
+        }
+
+        private void OnLevelUpFruitPressed()
+        {
+            if (TryStartBooster(BoosterType.LevelUpFruit, levelUpFruitBooster))
+                ToggleLevelUpSelection();
+        }
+
+        private bool RemoveTwoSmallestFruitTypes()
         {
             Fruit[] fruits = FindObjectsByType<Fruit>(FindObjectsSortMode.None);
             int scoreToAdd = 0;
@@ -93,6 +141,8 @@ namespace DuyDZ.MergeFood.Test
 
             if (removedAnyFruit)
                 PlayHaptic();
+
+            return removedAnyFruit;
         }
 
         private void ToggleBoomSelection()
@@ -115,6 +165,7 @@ namespace DuyDZ.MergeFood.Test
             ObjectPooler.current.Despawn(fruit.gameObject);
             ScoreManager.GetOrCreate().AddScore(scoreToAdd);
             PlayHaptic();
+            ConsumeUse(boomFruitBooster);
             SetSelectionMode(SelectionMode.None);
         }
 
@@ -140,7 +191,128 @@ namespace DuyDZ.MergeFood.Test
             PlayFruitEffect(position, effectPrefab);
             ScoreManager.GetOrCreate().AddScore(scoreToAdd);
             PlayHaptic();
+            ConsumeUse(levelUpFruitBooster);
             SetSelectionMode(SelectionMode.None);
+        }
+
+        private bool TryStartBooster(BoosterType boosterType, BoosterState state)
+        {
+            if (state != null && state.RemainingUses > 0)
+                return true;
+
+            SetSelectionMode(SelectionMode.None);
+            ShowRewardedAd(boosterType, () => GrantBoosterUse(state));
+            return false;
+        }
+
+        // Chèn SDK quảng cáo rewarded của bạn tại đây và chỉ gọi onRewardGranted
+        // sau khi người chơi đã xem quảng cáo thành công.
+        protected virtual void ShowRewardedAd(BoosterType boosterType, Action onRewardGranted)
+        {
+            GoogleAdsManager ads =        GoogleAdsManager.Instance;
+            if (ads == null)
+            {
+                return;
+            }
+            if (!ads.IsRewardedReady())
+            {
+                Debug.LogWarning(
+                    $"Rewarded chưa sẵn sàng cho {boosterType}.");
+
+                ads.LoadRewarded();
+                return;
+            }
+
+            ads.ShowRewarded(() =>
+            {
+                Debug.Log(
+                    $"Người chơi đã nhận thưởng cho {boosterType}.");
+
+                onRewardGranted?.Invoke();
+            });
+
+        }
+
+            private static void GrantBoosterUse(BoosterState state)
+        {
+            if (state == null)
+                return;
+
+            state.RemainingUses++;
+            SaveBoosterUses(state);
+            RefreshBoosterUI(state);
+        }
+
+        private static void ConsumeUse(BoosterState state)
+        {
+            if (state == null || state.RemainingUses <= 0)
+                return;
+
+            state.RemainingUses--;
+            SaveBoosterUses(state);
+            RefreshBoosterUI(state);
+        }
+
+        private static BoosterState CreateBoosterState(Button button, BoosterType boosterType)
+        {
+            if (button == null)
+                return null;
+
+            Transform countTransform = button.transform.Find("Count");
+            Transform adsTransform = button.transform.Find("Ads");
+            string playerPrefsKey = $"BoosterUses_{boosterType}";
+            BoosterState state = new BoosterState
+            {
+                Button = button,
+                CountIcon = countTransform != null ? countTransform.gameObject : null,
+                AdsIcon = adsTransform != null ? adsTransform.gameObject : null,
+                PlayerPrefsKey = playerPrefsKey,
+                RemainingUses = Mathf.Max(0, PlayerPrefs.GetInt(playerPrefsKey, InitialBoosterUses))
+            };
+
+            if (countTransform != null)
+                state.CountText = CreateCountText(countTransform);
+
+            RefreshBoosterUI(state);
+            return state;
+        }
+
+        private static void SaveBoosterUses(BoosterState state)
+        {
+            PlayerPrefs.SetInt(state.PlayerPrefsKey, state.RemainingUses);
+            PlayerPrefs.Save();
+        }
+
+        private static TMP_Text CreateCountText(Transform countTransform)
+        {
+            GameObject textObject = new GameObject("Value", typeof(RectTransform), typeof(CanvasRenderer));
+            textObject.transform.SetParent(countTransform, false);
+
+            RectTransform rectTransform = textObject.GetComponent<RectTransform>();
+            rectTransform.anchorMin = Vector2.zero;
+            rectTransform.anchorMax = Vector2.one;
+            rectTransform.offsetMin = Vector2.zero;
+            rectTransform.offsetMax = Vector2.zero;
+
+            TextMeshProUGUI text = textObject.AddComponent<TextMeshProUGUI>();
+            text.alignment = TextAlignmentOptions.Center;
+            text.fontSize = 30f;
+            text.fontStyle = FontStyles.Bold;
+            text.color = Color.white;
+            text.raycastTarget = false;
+            return text;
+        }
+
+        private static void RefreshBoosterUI(BoosterState state)
+        {
+            bool hasUses = state.RemainingUses > 0;
+
+            if (state.CountIcon != null)
+                state.CountIcon.SetActive(hasUses);
+            if (state.AdsIcon != null)
+                state.AdsIcon.SetActive(!hasUses);
+            if (state.CountText != null)
+                state.CountText.text = state.RemainingUses.ToString();
         }
 
         private void SetSelectionMode(SelectionMode mode)

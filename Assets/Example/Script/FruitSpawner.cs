@@ -103,6 +103,7 @@ namespace DuyDZ.MergeFood.Test
             isDragging = false;
             canSpawn = false;
             CancelInvoke(nameof(ResetSpawn));
+            RemovePendingFruit();
 
             Debug.Log("Game Over: Fruit touched the spawn line.");
 
@@ -136,6 +137,12 @@ namespace DuyDZ.MergeFood.Test
 
         private void Drop()
         {
+            if (IsGameOver || IsInputLocked || currentFruit == null)
+            {
+                isDragging = false;
+                return;
+            }
+
             Rigidbody2D rb = currentFruit.GetComponent<Rigidbody2D>();
             Fruit fruit = currentFruit.GetComponent<Fruit>();
             lastSpawnPosition = currentFruit.transform.position;
@@ -151,6 +158,20 @@ namespace DuyDZ.MergeFood.Test
             canSpawn = false;
 
             Invoke(nameof(ResetSpawn), 0.2f);
+        }
+
+        private void RemovePendingFruit()
+        {
+            if (currentFruit == null)
+                return;
+
+            GameObject pendingFruit = currentFruit;
+            currentFruit = null;
+
+            if (ObjectPooler.current != null)
+                ObjectPooler.current.Despawn(pendingFruit);
+            else
+                pendingFruit.SetActive(false);
         }
 
         private void ResetSpawn()
