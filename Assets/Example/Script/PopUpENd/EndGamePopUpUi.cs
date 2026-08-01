@@ -20,13 +20,24 @@ namespace DuyDZ.MergeFood
         }
         public void Show()
         {
+    
+            //stop physic,time, overrall stop all the game
+            Time.timeScale = 0;
+            GoogleAdsManager ads = GoogleAdsManager.Instance;
+            if(ads == null)
+            {
+                ShowPopUpContent();
+                return;
+            }
+            ads.ShowInterstitial(ShowPopUpContent);
+        }
+        void ShowPopUpContent()
+        {
             ScoreManager scoreManager = ScoreManager.GetOrCreate();
             scoreText.text = scoreManager.CurrentScore.ToString();
             bestScoreText.text = scoreManager.BestScore.ToString();
             transform.SetAsLastSibling();
             gameObject.SetActive(true);
-            //stop physic,time, overrall stop all the game
-            Time.timeScale = 0;
         }
         private void GoHome()
         {

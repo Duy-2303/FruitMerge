@@ -35,12 +35,6 @@ public class GoogleAdsManager : MonoBehaviour
     private bool isInterstitialLoading;
     private bool isRewardedLoading;
 
-    [Header("Interstitial Settings")]
-    [SerializeField, Min(0f)]
-    private float interstitialCooldownSeconds = 90f;
-
-    private float lastInterstitialShownTime = float.NegativeInfinity;
-
     private static string BannerId
     {
         get
@@ -86,7 +80,7 @@ public class GoogleAdsManager : MonoBehaviour
         }
 
         Instance = this;
-        ShowBanner();
+     
         DontDestroyOnLoad(gameObject);
     }
 
@@ -97,7 +91,7 @@ public class GoogleAdsManager : MonoBehaviour
         MobileAds.Initialize(_ =>
         {
             Debug.Log("Google Mobile Ads initialized.");
-
+            ShowBanner();
             LoadRewarded();
             LoadInterstitial();
         });
@@ -259,16 +253,6 @@ public class GoogleAdsManager : MonoBehaviour
 
     public void ShowInterstitial(Action onFinished)
     {
-        if (!IsInterstitialCooldownFinished())
-        {
-            Debug.Log(
-                $"Bỏ qua Interstitial. Còn " +
-                $"{GetInterstitialCooldownRemaining():0} giây cooldown.");
-
-            onFinished?.Invoke();
-            return;
-        }
-
         if (interstitialAd == null ||
             !interstitialAd.CanShowAd())
         {
@@ -297,12 +281,6 @@ public class GoogleAdsManager : MonoBehaviour
             onFinished?.Invoke();
         }
 
-        currentAd.OnAdFullScreenContentOpened += () =>
-        {
-            lastInterstitialShownTime = Time.realtimeSinceStartup;
-            Debug.Log("Interstitial opened. Cooldown started.");
-        };
-
         currentAd.OnAdFullScreenContentClosed += Finish;
 
         currentAd.OnAdFullScreenContentFailed += error =>
@@ -314,24 +292,6 @@ public class GoogleAdsManager : MonoBehaviour
         };
 
         currentAd.Show();
-    }
-
-    private bool IsInterstitialCooldownFinished()
-    {
-        float elapsed =
-            Time.realtimeSinceStartup - lastInterstitialShownTime;
-
-        return elapsed >= interstitialCooldownSeconds;
-    }
-
-    private float GetInterstitialCooldownRemaining()
-    {
-        float elapsed =
-            Time.realtimeSinceStartup - lastInterstitialShownTime;
-
-        return Mathf.Max(
-            0f,
-            interstitialCooldownSeconds - elapsed);
     }
 
     #endregion
