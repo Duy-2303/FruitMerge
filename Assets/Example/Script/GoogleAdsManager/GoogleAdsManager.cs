@@ -5,6 +5,9 @@ using UnityEngine;
 public class GoogleAdsManager : MonoBehaviour
 {
     public static GoogleAdsManager Instance { get; private set; }
+    public event Action<int> BannerHeightChanged;
+
+    public int BannerHeightPixels { get; private set; }
 
 #if UNITY_ANDROID
     // ID quảng cáo thật
@@ -118,6 +121,8 @@ public class GoogleAdsManager : MonoBehaviour
         bannerView.OnBannerAdLoaded += () =>
         {
             Debug.Log("Banner loaded.");
+            BannerHeightPixels = Mathf.CeilToInt(bannerView.GetHeightInPixels());
+            BannerHeightChanged?.Invoke(BannerHeightPixels);
         };
 
         bannerView.OnBannerAdLoadFailed += error =>
@@ -131,12 +136,16 @@ public class GoogleAdsManager : MonoBehaviour
     public void HideBanner()
     {
         bannerView?.Hide();
+        BannerHeightPixels = 0;
+        BannerHeightChanged?.Invoke(0);
     }
 
     public void DestroyBanner()
     {
         bannerView?.Destroy();
         bannerView = null;
+        BannerHeightPixels = 0;
+        BannerHeightChanged?.Invoke(0);
     }
 
     #endregion

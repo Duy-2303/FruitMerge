@@ -131,6 +131,7 @@ GameObject:
   - component: {fileID: 1006807458}
   - component: {fileID: 1006807457}
   - component: {fileID: 1006807460}
+  - component: {fileID: 1006807461}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -232,6 +233,25 @@ MonoBehaviour:
   strength: 0.2
   vibrato: 10
   randomness: 90
+--- !u!114 &1006807461
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1006807456}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c86230e69c784adba8c8111bb4bd4c63, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::LoadSceneController
+  background: {fileID: 2800000, guid: 985ee883387829447b1230045a65beeb, type: 3}
+  fruits: {fileID: 2800000, guid: ebe868dc59c2af546aea6af4b1807722, type: 3}
+  welcome: {fileID: 2800000, guid: 7380f2a5ae6db18459e4090cef57e42e, type: 3}
+  progressBackground: {fileID: 2800000, guid: 3a1abbb8f8462bd4c8fe5d218b706cd1, type: 3}
+  progressFill: {fileID: 2800000, guid: 8c90985d0f02eb34a8454397f4c8fa31, type: 3}
+  nextScene: HomeScene
+  minimumDisplayTime: 1.25
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

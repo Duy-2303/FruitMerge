@@ -38,6 +38,7 @@ namespace Link
         private Tween moveTween;
         private int lastPixelWidth = -1;
         private int lastPixelHeight = -1;
+        private int bottomInsetPixels;
 
         public Transform TF => cachedTransform != null
             ? cachedTransform
@@ -105,6 +106,27 @@ namespace Link
 
             lastPixelWidth = width;
             lastPixelHeight = height;
+        }
+
+        /// <summary>
+        /// Reserves screen space below the game camera (for example, an anchored banner ad).
+        /// The world is then fitted again using only the visible gameplay area.
+        /// </summary>
+        public void SetBottomInsetPixels(int pixels)
+        {
+            CacheCamera();
+            if (targetCamera == null)
+                return;
+
+            bottomInsetPixels = Mathf.Clamp(pixels, 0, Mathf.Max(0, Screen.height - 1));
+            float normalizedInset = Screen.height > 0
+                ? (float)bottomInsetPixels / Screen.height
+                : 0f;
+
+            targetCamera.rect = new Rect(0f, normalizedInset, 1f, 1f - normalizedInset);
+            lastPixelWidth = -1;
+            lastPixelHeight = -1;
+            AutoFit();
         }
 
         public void OnShake(
