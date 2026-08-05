@@ -13,6 +13,7 @@ namespace DuyDZ.MergeFood
         private const string MusicVolumeKey = "MusicVolume";
         private const string SfxVolumeKey = "SFXVolume";
         private const string HapticEnabledKey = "HapticEnabled";
+        private const string HomeSceneName = "HomeScene";
         private const string GameplaySceneName = "BuildScene";
 
         private GameObject settingsPanel;
@@ -186,18 +187,20 @@ namespace DuyDZ.MergeFood
         }
         private static void RestartGame()
         {
-            Scene currentScene = SceneManager.GetActiveScene();
-            SceneManager.LoadScene(currentScene.buildIndex);
+            LoadSceneController.ReloadCurrentScene();
         }
 
         private void GoHome()
         {
             CloseSettings();
+
+            if (SceneManager.GetActiveScene().name != HomeSceneName)
+                LoadSceneController.Load(HomeSceneName);
         }
 
         private static void StartGame()
         {
-            SceneManager.LoadScene(GameplaySceneName);
+            LoadSceneController.Load(GameplaySceneName);
         }
     }
 }

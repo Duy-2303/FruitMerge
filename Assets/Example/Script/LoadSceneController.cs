@@ -6,6 +6,10 @@ using UnityEngine.UI;
 /// <summary>Builds and drives the startup loading screen from the imported artwork.</summary>
 public sealed class LoadSceneController : MonoBehaviour
 {
+    public const string LoadingSceneName = "LoadScene";
+
+    private static string pendingScene;
+
     [Header("Loading artwork")]
     [SerializeField] private Texture background;
     [SerializeField] private Texture fruits;
@@ -20,15 +24,73 @@ public sealed class LoadSceneController : MonoBehaviour
     private RectTransform fillRect;
     private RawImage fillImage;
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetTransitionState()
+    {
+        pendingScene = null;
+    }
+
+    /// <summary>Loads a scene through the loading screen.</summary>
+    public static void Load(string targetScene)
+    {
+        if (string.IsNullOrWhiteSpace(targetScene))
+        {
+            Debug.LogError("Cannot load an empty scene name.");
+            return;
+        }
+
+        if (targetScene == LoadingSceneName)
+        {
+            Debug.LogError("LoadScene cannot be used as its own target scene.");
+            return;
+        }
+
+        if (!Application.CanStreamedLevelBeLoaded(LoadingSceneName))
+        {
+            Debug.LogError($"'{LoadingSceneName}' is missing or disabled in Build Settings.");
+            return;
+        }
+
+        if (!Application.CanStreamedLevelBeLoaded(targetScene))
+        {
+            Debug.LogError($"Target scene '{targetScene}' is missing or disabled in Build Settings.");
+            return;
+        }
+
+        pendingScene = targetScene;
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(LoadingSceneName, LoadSceneMode.Single);
+    }
+
+    public static void ReloadCurrentScene()
+    {
+        Scene currentScene = SceneManager.GetActiveScene();
+        if (currentScene.name == LoadingSceneName)
+            return;
+
+        Load(currentScene.name);
+    }
+
     private IEnumerator Start()
     {
         BuildInterface();
 
+        string targetScene = string.IsNullOrWhiteSpace(pendingScene)
+            ? nextScene
+            : pendingScene;
+        pendingScene = null;
+
+        if (targetScene == LoadingSceneName)
+        {
+            Debug.LogError("The loading screen target cannot be LoadScene.", this);
+            yield break;
+        }
+
         float startedAt = Time.realtimeSinceStartup;
-        AsyncOperation operation = SceneManager.LoadSceneAsync(nextScene);
+        AsyncOperation operation = SceneManager.LoadSceneAsync(targetScene);
         if (operation == null)
         {
-            Debug.LogError($"Loading scene could not find '{nextScene}'. Check Build Settings.", this);
+            Debug.LogError($"Loading scene could not find '{targetScene}'. Check Build Settings.", this);
             yield break;
         }
 

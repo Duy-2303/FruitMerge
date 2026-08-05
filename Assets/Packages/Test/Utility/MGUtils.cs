@@ -1140,8 +1140,20 @@ public class MGUtils : MonoBehaviour
     public static void LoadNextScene()
     {
         int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
-        int nextSceneIndex = (currentSceneIndex + 1) % SceneManager.sceneCountInBuildSettings;
-        SceneManager.LoadScene(nextSceneIndex);
+        int sceneCount = SceneManager.sceneCountInBuildSettings;
+
+        for (int offset = 1; offset <= sceneCount; offset++)
+        {
+            int nextSceneIndex = (currentSceneIndex + offset) % sceneCount;
+            string nextScenePath = SceneUtility.GetScenePathByBuildIndex(nextSceneIndex);
+            string nextSceneName = Path.GetFileNameWithoutExtension(nextScenePath);
+
+            if (nextSceneName == LoadSceneController.LoadingSceneName)
+                continue;
+
+            LoadSceneController.Load(nextSceneName);
+            return;
+        }
     }
 
     #region Mathematics

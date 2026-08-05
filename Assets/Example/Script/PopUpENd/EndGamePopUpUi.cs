@@ -1,6 +1,5 @@
 using TMPro;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using DuyDZ.MergeFood.Test;
 
@@ -41,15 +40,12 @@ namespace DuyDZ.MergeFood
         }
         private void GoHome()
         {
-            Time.timeScale = 1;
-            SceneManager.LoadScene("HomeScene");
+            LoadSceneController.Load("HomeScene");
         }
 
         private void Replay()
         {
-            Time.timeScale = 1;
-            Scene currentScene = SceneManager.GetActiveScene();
-            SceneManager.LoadScene(currentScene.buildIndex);
+            LoadSceneController.ReloadCurrentScene();
         }
     }
 }
