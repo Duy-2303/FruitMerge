@@ -5,10 +5,16 @@ namespace DuyDZ.MergeFood.Test
 {
     public class MergeManager : MonoBehaviour
     {
+        private enum DefaultSound
+        {
+            Merge = 0
+        }
+
         public static MergeManager Ins;
 
         [Header("Merge FX")]
         [SerializeField] private ParticleSystem mergeParticlePrefab;
+        [SerializeField] private AudioClip mergeSound;
         [SerializeField] private Color mergeParticleStartColor = new Color(1f, 0.95f, 0.25f, 1f);
         [SerializeField] private Color mergeParticleEndColor = new Color(1f, 0.45f, 0.18f, 1f);
         [SerializeField] private int mergeParticleCount = 24;
@@ -56,8 +62,25 @@ namespace DuyDZ.MergeFood.Test
 
             ObjectPooler.current.Spawn(key, pos, (FruitType)nextLevel, nextLevel, true);
             PlayMergeParticle(pos, fruitMergeVfxPrefab);
+            PlayMergeSound();
             PlayMergeHaptic();
             ScoreManager.GetOrCreate().AddScore(nextLevel * 10);
+        }
+
+        private void PlayMergeSound()
+        {
+            SoundControl soundControl = SoundControl.Ins;
+            if (soundControl == null)
+                return;
+
+            if (mergeSound != null)
+            {
+                soundControl.PlayFX(mergeSound);
+                return;
+            }
+
+            // BuildScene already stores the pop sound at index 0.
+            soundControl.PlayFX(DefaultSound.Merge);
         }
 
         private void PlayMergeParticle(Vector3 position, ParticleSystem fruitMergeVfxPrefab)

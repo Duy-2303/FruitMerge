@@ -9,6 +9,11 @@ namespace DuyDZ.MergeFood.Test
 {
     public class FruitSpawner : MonoBehaviour
     {
+        private enum DefaultSound
+        {
+            GameOver = 1
+        }
+
         public Transform spawnPoint;
         [SerializeField] private GameObject settingsPanel;
         [Header("Game Over")]
@@ -104,6 +109,7 @@ namespace DuyDZ.MergeFood.Test
             canSpawn = false;
             CancelInvoke(nameof(ResetSpawn));
             RemovePendingFruit();
+            PlayGameOverSound();
 
             Debug.Log("Game Over: Fruit touched the spawn line.");
 
@@ -111,6 +117,13 @@ namespace DuyDZ.MergeFood.Test
                 ShowGameOverPopup();
             else
                 Invoke(nameof(ShowGameOverPopup), gameOverPopupDelay);
+        }
+
+        private static void PlayGameOverSound()
+        {
+            SoundControl soundControl = SoundControl.Ins;
+            if (soundControl != null)
+                soundControl.PlayFX(DefaultSound.GameOver);
         }
 
         public void ShowGameOverPopup()

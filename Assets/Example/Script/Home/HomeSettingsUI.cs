@@ -183,7 +183,7 @@ namespace DuyDZ.MergeFood
 
             Transform indicator = button.transform.Find("OnOff");
             if (indicator != null)
-                indicator.gameObject.SetActive(enabled);
+                indicator.gameObject.SetActive(!enabled);
         }
         private static void RestartGame()
         {
@@ -201,6 +201,52 @@ namespace DuyDZ.MergeFood
         private static void StartGame()
         {
             LoadSceneController.Load(GameplaySceneName);
+        }
+    }
+
+    public static class UIButtonClickSound
+    {
+        private const string ClickClipResourcePath = "1.dragon-studio-pop-402324";
+        private const string SfxVolumeKey = "SFXVolume";
+        private const string SfxActiveKey = "SFXActive";
+        private const float MuteThreshold = 0.1f;
+
+        private static AudioClip clickClip;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void Initialize()
+        {
+            SceneManager.sceneLoaded -= RegisterSceneButtons;
+            SceneManager.sceneLoaded += RegisterSceneButtons;
+        }
+
+        private static void RegisterSceneButtons(Scene scene, LoadSceneMode mode)
+        {
+            Button[] buttons = Object.FindObjectsByType<Button>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None);
+
+            foreach (Button button in buttons)
+            {
+                if (button == null)
+                    continue;
+
+                button.onClick.RemoveListener(PlayClick);
+                button.onClick.AddListener(PlayClick);
+            }
+        }
+
+        private static void PlayClick()
+        {
+            if (PlayerPrefs.GetFloat(SfxVolumeKey, 1f) <= MuteThreshold ||
+                PlayerPrefs.GetInt(SfxActiveKey, 1) == 0)
+                return;
+
+            if (clickClip == null)
+                clickClip = Resources.Load<AudioClip>(ClickClipResourcePath);
+
+            if (clickClip != null)
+                AudioManager.PlaySFX(clickClip);
         }
     }
 }

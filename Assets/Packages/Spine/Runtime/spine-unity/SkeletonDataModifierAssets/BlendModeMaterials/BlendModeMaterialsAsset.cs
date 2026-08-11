@@ -1,8 +1,8 @@
 /******************************************************************************
  * Spine Runtimes License Agreement
- * Last updated January 1, 2020. Replaces all prior versions.
+ * Last updated April 5, 2025. Replaces all prior versions.
  *
- * Copyright (c) 2013-2020, Esoteric Software LLC
+ * Copyright (c) 2013-2026, Esoteric Software LLC
  *
  * Integration of the Spine Runtimes into software or otherwise creating
  * derivative works of the Spine Runtimes is permitted under the terms and
@@ -50,16 +50,16 @@ namespace Spine.Unity {
 		public static void ApplyMaterials (SkeletonData skeletonData, Material multiplyTemplate, Material screenTemplate, Material additiveTemplate, bool includeAdditiveSlots) {
 			if (skeletonData == null) throw new ArgumentNullException("skeletonData");
 
-			using (var materialCache = new AtlasMaterialCache()) {
-				var entryBuffer = new List<Skin.SkinEntry>();
-				var slotsItems = skeletonData.Slots.Items;
+			using (AtlasMaterialCache materialCache = new AtlasMaterialCache()) {
+				List<Skin.SkinEntry> entryBuffer = new List<Skin.SkinEntry>();
+				SlotData[] slotsItems = skeletonData.Slots.Items;
 				for (int slotIndex = 0, slotCount = skeletonData.Slots.Count; slotIndex < slotCount; slotIndex++) {
-					var slot = slotsItems[slotIndex];
+					SlotData slot = slotsItems[slotIndex];
 					if (slot.BlendMode == BlendMode.Normal) continue;
 					if (!includeAdditiveSlots && slot.BlendMode == BlendMode.Additive) continue;
 
 					entryBuffer.Clear();
-					foreach (var skin in skeletonData.Skins)
+					foreach (Skin skin in skeletonData.Skins)
 						skin.GetAttachments(slotIndex, entryBuffer);
 
 					Material templateMaterial = null;
@@ -76,10 +76,13 @@ namespace Spine.Unity {
 					}
 					if (templateMaterial == null) continue;
 
-					foreach (var entry in entryBuffer) {
-						var renderableAttachment = entry.Attachment as IHasRendererObject;
-						if (renderableAttachment != null) {
-							renderableAttachment.RendererObject = materialCache.CloneAtlasRegionWithMaterial((AtlasRegion)renderableAttachment.RendererObject, templateMaterial);
+					foreach (Skin.SkinEntry entry in entryBuffer) {
+						IHasSequence renderableAttachment = entry.Attachment as IHasSequence;
+						if (renderableAttachment == null) continue;
+						TextureRegion[] regions = renderableAttachment.Sequence.Regions;
+						for (int i = 0; i < regions.Length; ++i) {
+							regions[i] = materialCache.CloneAtlasRegionWithMaterial(
+								(AtlasRegion)regions[i], templateMaterial);
 						}
 					}
 				}
@@ -93,7 +96,7 @@ namespace Spine.Unity {
 
 			/// <summary>Creates a clone of an AtlasRegion that uses different Material settings, while retaining the original texture.</summary>
 			public AtlasRegion CloneAtlasRegionWithMaterial (AtlasRegion originalRegion, Material materialTemplate) {
-				var newRegion = originalRegion.Clone();
+				AtlasRegion newRegion = originalRegion.Clone();
 				newRegion.page = GetAtlasPageWithMaterial(originalRegion.page, materialTemplate);
 				return newRegion;
 			}
@@ -107,7 +110,7 @@ namespace Spine.Unity {
 
 				if (newPage == null) {
 					newPage = originalPage.Clone();
-					var originalMaterial = originalPage.rendererObject as Material;
+					Material originalMaterial = originalPage.rendererObject as Material;
 					newPage.rendererObject = new Material(materialTemplate) {
 						name = originalMaterial.name + " " + materialTemplate.name,
 						mainTexture = originalMaterial.mainTexture

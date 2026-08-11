@@ -1,5 +1,6 @@
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 
 namespace Link
@@ -25,6 +26,7 @@ namespace Link
         [SerializeField] private Vector2 referenceResolution = new Vector2(1080f, 1920f);
         [FormerlySerializedAs("min")]
         [SerializeField, Min(0.01f)] private float referenceOrthographicSize = 5f;
+        [SerializeField, Min(0f)] private float bottomCropWorldUnits = 0.18f;
 
         [Header("Shake")]
         [SerializeField] private ShakeType testShakeType = ShakeType.Normal_1;
@@ -39,6 +41,26 @@ namespace Link
         private int lastPixelWidth = -1;
         private int lastPixelHeight = -1;
         private int bottomInsetPixels;
+        private Vector3 referenceLocalPosition;
+        private bool hasReferencePosition;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void RegisterSceneHook()
+        {
+            SceneManager.sceneLoaded -= AddToMainCamera;
+            SceneManager.sceneLoaded += AddToMainCamera;
+        }
+
+        private static void AddToMainCamera(Scene scene, LoadSceneMode mode)
+        {
+            Camera mainCamera = Camera.main;
+
+            if (mainCamera == null || !mainCamera.orthographic)
+                return;
+
+            if (mainCamera.GetComponent<CameraControl>() == null)
+                mainCamera.gameObject.AddComponent<CameraControl>();
+        }
 
         public Transform TF => cachedTransform != null
             ? cachedTransform
@@ -52,6 +74,7 @@ namespace Link
         {
             _instance = this;
             CacheCamera();
+            CacheReferencePosition();
         }
 
         private void OnEnable()
@@ -100,9 +123,18 @@ namespace Link
                                    * referenceAspect
                                    / currentAspect;
 
-            targetCamera.orthographicSize = Mathf.Max(
-                referenceOrthographicSize,
-                sizeToFitWidth);
+            // Always fit the designed world width. This keeps the left and
+            // right limit walls on the two screen edges on every portrait ratio.
+            float fittedSize = sizeToFitWidth;
+            targetCamera.orthographicSize = fittedSize;
+
+            // Keep the gameplay floor at the same bottom edge. Any additional
+            // height on a tall phone is revealed above the level, in the sky.
+            CacheReferencePosition();
+            Vector3 fittedPosition = referenceLocalPosition;
+            fittedPosition.y += fittedSize - referenceOrthographicSize;
+            fittedPosition.y += bottomCropWorldUnits;
+            targetCamera.transform.localPosition = fittedPosition;
 
             lastPixelWidth = width;
             lastPixelHeight = height;
@@ -186,6 +218,15 @@ namespace Link
         {
             if (targetCamera == null)
                 targetCamera = GetComponent<Camera>();
+        }
+
+        private void CacheReferencePosition()
+        {
+            if (hasReferencePosition || targetCamera == null)
+                return;
+
+            referenceLocalPosition = targetCamera.transform.localPosition;
+            hasReferencePosition = true;
         }
 
         private int GetPixelWidth()

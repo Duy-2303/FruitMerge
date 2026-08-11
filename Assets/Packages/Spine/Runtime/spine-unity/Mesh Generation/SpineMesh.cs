@@ -1,8 +1,8 @@
 /******************************************************************************
  * Spine Runtimes License Agreement
- * Last updated January 1, 2020. Replaces all prior versions.
+ * Last updated April 5, 2025. Replaces all prior versions.
  *
- * Copyright (c) 2013-2020, Esoteric Software LLC
+ * Copyright (c) 2013-2026, Esoteric Software LLC
  *
  * Integration of the Spine Runtimes into software or otherwise creating
  * derivative works of the Spine Runtimes is permitted under the terms and
@@ -27,12 +27,11 @@
  * THE SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
-// Not for optimization. Do not disable.
-#define SPINE_TRIANGLECHECK // Avoid calling SetTriangles at the cost of checking for mesh differences (vertex counts, memberwise attachment list compare) every frame.
+// Optimization option: Allows faster BuildMeshWithArrays call and avoids calling SetTriangles at the cost of
+// checking for mesh differences (vertex counts, member-wise attachment list compare) every frame.
+#define SPINE_TRIANGLECHECK
 //#define SPINE_DEBUG
 
-using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Spine.Unity {
@@ -41,7 +40,7 @@ namespace Spine.Unity {
 
 		/// <summary>Factory method for creating a new mesh for use in Spine components. This can be called in field initializers.</summary>
 		public static Mesh NewSkeletonMesh () {
-			var m = new Mesh();
+			Mesh m = new Mesh();
 			m.MarkDynamic();
 			m.name = "Skeleton Mesh";
 			m.hideFlags = SpineMesh.MeshHideflags;
@@ -66,6 +65,9 @@ namespace Spine.Unity {
 		public int rawVertexCount;
 		public int rawFirstVertexIndex;
 		public bool hasClipping;
+#else
+		/// <summary>Returns constant vertex count for early-return if clauses in renderers.</summary>
+		public int rawVertexCount { get { return 1; } }
 #endif
 		public bool hasPMAAdditiveSlot;
 

@@ -22,6 +22,7 @@ public enum CommonSound
 
 public class AudioManager : Singleton<AudioManager>
 {
+    private const string BACKGROUND_MUSIC_RESOURCE = "original_kawaii_garden_vibe";
     private const string KEY_BGM_VOLUME = "MusicVolume";
     private const string KEY_SFX_VOLUME = "SFXVolume";
     private const string KEY_BGM_ACTIVE = "MusicActive";
@@ -53,9 +54,23 @@ public class AudioManager : Singleton<AudioManager>
     public event System.Action<AudioClip> onBgmPlayed;
     public event System.Action onBgmStopped;
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void InitializeRuntime()
+    {
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = 60;
+        InitInstance();
+    }
+
     protected void Awake()
     {
-        //base.Awake();
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        _instance = this;
 
         // Don't destroy this object when loading a new scene
         DontDestroyOnLoad(gameObject);
@@ -72,6 +87,8 @@ public class AudioManager : Singleton<AudioManager>
             MusicSource.outputAudioMixerGroup = audioMixer.FindMatchingGroups(MIXER_GROUP_BGM)[0];
             SfxSource.outputAudioMixerGroup = audioMixer.FindMatchingGroups(MIXER_GROUP_SFX)[0];
         }
+
+        StartBackgroundMusic();
 
         //IngameDebugConsole.DebugLogManager.Instance.onCmdAudioBypass.AddListener(() =>
         //{
@@ -98,22 +115,36 @@ public class AudioManager : Singleton<AudioManager>
 
     public void SetMusicVolume(float volume)
     {
+        volume = Mathf.Clamp01(volume);
         PlayerPrefs.SetFloat(KEY_BGM_VOLUME, volume);
         PlayerPrefs.Save();
 
-        volume *= musicVolumeMul;
-        audioMixer?.SetFloat(KEY_BGM_VOLUME, -80 * (1 - volume));
+        float playbackVolume = PlayerPrefs.GetInt(KEY_BGM_ACTIVE, 1) == 1
+            ? Mathf.Clamp01(volume * musicVolumeMul)
+            : 0f;
+
+        if (MusicSource != null)
+            MusicSource.volume = playbackVolume;
+
+        audioMixer?.SetFloat(KEY_BGM_VOLUME, -80 * (1 - playbackVolume));
 
         onBgmVolumeChanged?.Invoke(IsMusicOn);
     }
 
     public void SetSFXVolume(float volume)
     {
+        volume = Mathf.Clamp01(volume);
         PlayerPrefs.SetFloat(KEY_SFX_VOLUME, volume);
         PlayerPrefs.Save();
 
-        volume *= sfxVolumeMul;
-        audioMixer?.SetFloat(KEY_SFX_VOLUME, -80 * (1 - volume));
+        float playbackVolume = PlayerPrefs.GetInt(KEY_SFX_ACTIVE, 1) == 1
+            ? Mathf.Clamp01(volume * sfxVolumeMul)
+            : 0f;
+
+        if (SfxSource != null)
+            SfxSource.volume = playbackVolume;
+
+        audioMixer?.SetFloat(KEY_SFX_VOLUME, -80 * (1 - playbackVolume));
 
         onSfxVolumeChanged?.Invoke(IsSfxOn);
     }
@@ -121,6 +152,24 @@ public class AudioManager : Singleton<AudioManager>
     public void StopMusicWithoutNotify()
     {
         MusicSource.Stop();
+    }
+
+    private void StartBackgroundMusic()
+    {
+        AudioClip soundtrack = Resources.Load<AudioClip>(BACKGROUND_MUSIC_RESOURCE);
+        if (soundtrack == null)
+        {
+            Debug.LogWarning($"Background soundtrack was not found at Resources/{BACKGROUND_MUSIC_RESOURCE}.");
+            return;
+        }
+
+        MusicSource.clip = soundtrack;
+        MusicSource.loop = true;
+        MusicSource.volume = IsMusicOn
+            ? Mathf.Clamp01(PlayerPrefs.GetFloat(KEY_BGM_VOLUME, 1f) * musicVolumeMul)
+            : 0f;
+        MusicSource.Play();
+        onBgmPlayed?.Invoke(soundtrack);
     }
 
     #region Static
